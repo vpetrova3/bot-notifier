@@ -141,15 +141,21 @@ async function checkAvailability(env, forceSend = false) {
 }
 
 function buildPriceList(standardAvail, rushAvail) {
+  // Show lowest standard price and whether Friday Rush is available
   const prices = [];
-  for (const p of standardAvail) {
-    prices.push(`£${p.price} (standard)`);
+  if (standardAvail.length > 0) {
+    const lowest = standardAvail.reduce((min, p) =>
+      parseFloat(p.price) < parseFloat(min.price) ? p : min
+    );
+    prices.push(`from £${lowest.price}`);
   }
-  for (const p of rushAvail) {
-    prices.push(`£${p.price} (Friday Rush)`);
+  if (rushAvail.length > 0) {
+    const lowestRush = rushAvail.reduce((min, p) =>
+      parseFloat(p.price) < parseFloat(min.price) ? p : min
+    );
+    prices.push(`£${lowestRush.price} Friday Rush`);
   }
-  // Deduplicate
-  return [...new Set(prices)];
+  return prices;
 }
 
 async function sendNotifications(env, newlyAvailable) {
