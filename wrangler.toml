@@ -1,0 +1,18 @@
+name = "nt-ticket-monitor"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Free KV namespace — stores last known availability state so we don't spam you
+[[kv_namespaces]]
+binding = "TICKET_MONITOR_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"   # filled in during setup
+
+# Cron: run every 3 minutes, 24/7 (free tier allows 100k requests/day — this uses ~480/day)
+[triggers]
+crons = ["*/3 * * * *"]
+
+# Secrets — set these via `wrangler secret put` (never put real values here)
+# MAILGUN_API_KEY      — your Mailgun API key
+# MAILGUN_DOMAIN       — your Mailgun sandbox domain (e.g. sandbox123.mailgun.org)
+# ALERT_EMAIL          — the address to send alerts to (your email)
+# SLACK_WEBHOOK_URL    — your Slack incoming webhook URL
