@@ -1,8 +1,14 @@
 /**
  * NT Ticket Monitor — Cloudflare Worker
  * Polls the National Theatre events API every 3 minutes.
- * Alerts via email (Mailgun) and Slack when standard-sale tickets
- * become available for any October 2026 performance of Electra/Persona.
+ * Alerts via email (Resend — free, no credit card) and Slack when
+ * standard-sale tickets become available for any October 2026
+ * performance of Electra/Persona.
+ *
+ * Secrets needed (set via `wrangler secret put`):
+ *   RESEND_API_KEY      — from resend.com (free, no card)
+ *   ALERT_EMAIL         — your email address
+ *   SLACK_WEBHOOK_URL   — from api.slack.com/apps
  */
 
 const EVENT_ID = "95878";
@@ -138,32 +144,29 @@ async function sendNotifications(env, newlyAvailable) {
   const textBody = buildTextMessage(newlyAvailable);
   const htmlBody = buildHtmlMessage(newlyAvailable);
 
-  // --- Email via Mailgun ---
-  if (env.MAILGUN_API_KEY && env.MAILGUN_DOMAIN && env.ALERT_EMAIL) {
+  // --- Email via Resend (free: 3,000 emails/month, no credit card) ---
+  if (env.RESEND_API_KEY && env.ALERT_EMAIL) {
     try {
-      const form = new FormData();
-      form.append("from", `NT Ticket Monitor <noreply@${env.MAILGUN_DOMAIN}>`);
-      form.append("to", env.ALERT_EMAIL);
-      form.append("subject", subject);
-      form.append("text", textBody);
-      form.append("html", htmlBody);
-
-      const mgRes = await fetch(
-        `https://api.mailgun.net/v3/${env.MAILGUN_DOMAIN}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${btoa(`api:${env.MAILGUN_API_KEY}`)}`,
-          },
-          body: form,
-        }
-      );
-      results.email = mgRes.ok ? "sent" : `failed (${mgRes.status})`;
+      const resRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "NT Ticket Monitor <onboarding@resend.dev>",
+          to: [env.ALERT_EMAIL],
+          subject,
+          text: textBody,
+          html: htmlBody,
+        }),
+      });
+      results.email = resRes.ok ? "sent" : `failed (${resRes.status}: ${await resRes.text()})`;
     } catch (e) {
       results.email = `error: ${e.message}`;
     }
   } else {
-    results.email = "skipped (MAILGUN_API_KEY / MAILGUN_DOMAIN / ALERT_EMAIL not configured)";
+    results.email = "skipped (RESEND_API_KEY / ALERT_EMAIL not configured)";
   }
 
   // --- Slack webhook ---
