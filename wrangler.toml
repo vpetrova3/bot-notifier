@@ -1,6 +1,7 @@
 name = "nt-ticket-monitor"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
+workers_dev = true
 
 # Free KV namespace — stores last known availability state so we don't spam you
 [[kv_namespaces]]

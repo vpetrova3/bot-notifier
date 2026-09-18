@@ -48,6 +48,20 @@ export default {
         headers: { "Content-Type": "text/plain" },
       });
     }
+    if (url.pathname === "/test") {
+      // Sends a real test notification (email + Slack) regardless of ticket availability
+      const fakePerf = [{
+        perfId: "TEST",
+        perfDate: "Saturday 4 October 2026",
+        perfTime: "7:30pm",
+        bookingUrl: "https://events.nationaltheatre.org.uk/events/95878",
+        prices: ["£32 (standard)", "£10 (Friday Rush)"],
+      }];
+      const result = await sendNotifications(env, fakePerf);
+      return new Response(JSON.stringify({ sent: true, result }, null, 2), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(
       "NT Ticket Monitor running.\n\nEndpoints:\n  GET /check  – run a manual check now\n  GET /status – view last known state\n  GET /reset  – clear state (re-arms all alerts)",
       { headers: { "Content-Type": "text/plain" } }
@@ -155,7 +169,7 @@ async function sendNotifications(env, newlyAvailable) {
         },
         body: JSON.stringify({
           from: "NT Ticket Monitor <onboarding@resend.dev>",
-          to: [env.ALERT_EMAIL],
+          to: ["vpetrova3@gatech.edu"],
           subject,
           text: textBody,
           html: htmlBody,
